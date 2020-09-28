@@ -11,10 +11,12 @@
 //		return nil
 //	})
 //
-// The first time a task is submitted to the global queue, it will be
-// initialized and start running in the background.
+// This task will be executed in the background and automatically retried with
+// an exponential backoff, up to a maximum number of attempts. The first time a
+// task is submitted to the global queue, it will be initialized and start
+// running in the background.
 //
-// To customize the behavior, use work.Enqueue:
+// To customize options like maximum retries and timeouts, use work.Enqueue:
 //
 //	task := work.NewTask(func() error {
 //		// ...
@@ -23,5 +25,5 @@
 //
 // You may also manage your own work queues. Use NewQueue() to obtain a queue,
 // queue.Dispatch() to execute all overdue tasks, and queue.Run() to spin up a
-// Goroutine and start dispatching tasks automatically.
+// goroutine and start dispatching tasks automatically.
 package work
