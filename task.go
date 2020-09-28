@@ -103,3 +103,9 @@ func (t *Task) MaxTimeout(d time.Duration) *Task {
 func (t *Task) Attempts() int {
 	return t.attempts
 }
+
+// Returns the time the next attempt is scheduled for, or the zero value if it
+// has not been attempted before.
+func (t *Task) NextAttempt() time.Time {
+	return t.nextAttempt
+}
