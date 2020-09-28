@@ -16,13 +16,13 @@ func TestQueue(t *testing.T) {
 	})
 
 	var calls int
-	q.Task(func() error {
+	q.Submit(func() error {
 		calls++
 		return nil
 	})
 
 	var attempts int
-	q.Task(func() error {
+	q.Submit(func() error {
 		calls++
 		attempts++
 		if attempts >= 2 {
@@ -52,9 +52,9 @@ func TestTasksQueueingTasks(t *testing.T) {
 	q := NewQueue()
 
 	var calls int
-	q.Task(func() error {
+	q.Submit(func() error {
 		// Should not deadlock
-		q.Task(func() error {
+		q.Submit(func() error {
 			calls++
 			return nil
 		})
