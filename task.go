@@ -103,8 +103,3 @@ func (t *Task) MaxTimeout(d time.Duration) *Task {
 func (t *Task) Attempts() int {
 	return t.attempts
 }
-
-// Returns the result of the last attempt, or nil if never attempted.
-func (t *Task) Result() error {
-	return t.err
-}
