@@ -7,10 +7,14 @@ import (
 )
 
 var (
-	// Returned when a task is attempted which was already successfully completed
+	// Returned when a task is attempted which was already successfully completed.
 	ErrAlreadyComplete = errors.New("This task was already successfully completed once")
+
+	// If this is returned from a task function, the task shall not be re-attempted.
 	ErrDoNotReattempt = errors.New("This task should not be re-attempted")
 
+	// Set this function to influence the clock that will be used for
+	// scheduling re-attempts.
 	Now = func() time.Time {
 		return time.Now().UTC()
 	}
@@ -19,16 +23,21 @@ var (
 // Stores state for a task which shall be or has been executed. Each task may
 // only be executed successfully once.
 type Task struct {
-	fn func() error
+	Metadata map[string]string
 
 	attempts    int
 	err         error
-	metadata    map[string]string
+	fn          func() error
 	nextAttempt time.Time
 }
 
+// Creates a new task for a given function.
 func NewTask(fn func() error) *Task {
-	return &Task{fn: fn}
+	return &Task{
+		Metadata: make(map[string]string),
+
+		fn: fn,
+	}
 }
 
 // Attempts to execute this task.
