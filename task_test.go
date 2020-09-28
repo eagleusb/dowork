@@ -79,4 +79,28 @@ func TestBackoff(t *testing.T) {
 
 	due, _ = task.Attempt()
 	assert.Equal(t, now.Add(30 * time.Minute), due)
+
+	task.MaxTimeout(10 * time.Minute)
+
+	due, _ = task.Attempt()
+	assert.Equal(t, now.Add(10 * time.Minute), due)
+}
+
+func TestMaxAttempts(t *testing.T) {
+	taskerr := errors.New("error")
+	task := NewTask(func() error {
+		return taskerr
+	}).Retries(3)
+
+	_, err := task.Attempt()
+	assert.Equal(t, err, taskerr)
+
+	_, err = task.Attempt()
+	assert.Equal(t, err, taskerr)
+
+	_, err = task.Attempt()
+	assert.Equal(t, err, taskerr)
+
+	_, err = task.Attempt()
+	assert.Equal(t, err, ErrMaxRetriesExceeded)
 }
