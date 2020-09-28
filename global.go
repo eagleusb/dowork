@@ -15,3 +15,8 @@ func Enqueue(t *Task) {
 	ensureQueue()
 	globalQueue.Enqueue(t)
 }
+
+func Submit(fn func() error) *Task {
+	ensureQueue()
+	return globalQueue.Submit(fn)
+}

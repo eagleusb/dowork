@@ -39,7 +39,7 @@ func (q *Queue) Enqueue(t *Task) {
 }
 
 // Creates and enqueues a new task, returning the new task.
-func (q *Queue) Task(fn func() error) *Task {
+func (q *Queue) Submit(fn func() error) *Task {
 	t := NewTask(fn)
 	q.Enqueue(t)
 	return t
