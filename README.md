@@ -6,10 +6,14 @@ and reschedules tasks in Goroutine in-process.
 A global task queue is provided for simple use-cases. To use it:
 
 ```go
-import "git.sr.ht/~sircmpwn/dowork"
+import (
+  "context"
+
+  "git.sr.ht/~sircmpwn/dowork"
+)
 
 // ...
-work.Submit(func() error {
+work.Submit(func(ctx context.Context) error {
   // Thing which might fail...
   return nil
 })
@@ -23,7 +27,7 @@ the background.
 To customize options like maximum retries and timeouts, use work.Enqueue:
 
 ```go
-task := work.NewTask(func() error {
+task := work.NewTask(func(ctx context.Context) error {
   // ...
 }).Retries(5).MaxTimeout(10 * time.Minute)
 work.Enqueue(task)

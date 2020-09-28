@@ -17,13 +17,13 @@ func TestQueue(t *testing.T) {
 	})
 
 	var calls int
-	q.Submit(func() error {
+	q.Submit(func(ctx context.Context) error {
 		calls++
 		return nil
 	})
 
 	var attempts int
-	q.Submit(func() error {
+	q.Submit(func(ctx context.Context) error {
 		calls++
 		attempts++
 		if attempts >= 2 {
@@ -32,20 +32,20 @@ func TestQueue(t *testing.T) {
 		return errors.New("error")
 	})
 
-	q.Dispatch()
+	q.Dispatch(context.TODO())
 	assert.Equal(t, 2, calls)
 
-	q.Dispatch()
+	q.Dispatch(context.TODO())
 	assert.Equal(t, 2, calls)
 
 	now = now.Add(5 * time.Minute)
 
-	q.Dispatch()
+	q.Dispatch(context.TODO())
 	assert.Equal(t, 3, calls)
 
 	now = now.Add(5 * time.Minute)
 
-	q.Dispatch()
+	q.Dispatch(context.TODO())
 	assert.Equal(t, 3, calls)
 }
 
@@ -53,9 +53,9 @@ func TestTasksQueueingTasks(t *testing.T) {
 	q := NewQueue()
 
 	var calls int
-	q.Submit(func() error {
+	q.Submit(func(ctx context.Context) error {
 		// Should not deadlock
-		q.Submit(func() error {
+		q.Submit(func(ctx context.Context) error {
 			calls++
 			return nil
 		})
@@ -63,10 +63,10 @@ func TestTasksQueueingTasks(t *testing.T) {
 		return nil
 	})
 
-	q.Dispatch()
+	q.Dispatch(context.TODO())
 	assert.Equal(t, 1, calls)
 
-	q.Dispatch()
+	q.Dispatch(context.TODO())
 	assert.Equal(t, 2, calls)
 }
 
@@ -76,16 +76,16 @@ func TestRun(t *testing.T) {
 		calledA bool
 		calledB bool
 	)
-	q.Submit(func() error {
+	q.Submit(func(ctx context.Context) error {
 		calledA = true
 		return errors.New("error")
 	})
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.TODO())
 	go q.Run(ctx)
 	time.Sleep(50 * time.Millisecond)
 	assert.True(t, calledA)
 
-	q.Submit(func() error {
+	q.Submit(func(ctx context.Context) error {
 		calledB = true
 		return errors.New("error")
 	})

@@ -20,7 +20,7 @@ func Enqueue(t *Task) {
 	globalQueue.Enqueue(t)
 }
 
-func Submit(fn func() error) *Task {
+func Submit(fn func(ctx context.Context) error) *Task {
 	ensureQueue()
 	return globalQueue.Submit(fn)
 }

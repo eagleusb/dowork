@@ -40,7 +40,7 @@ func (q *Queue) Enqueue(t *Task) {
 }
 
 // Creates and enqueues a new task, returning the new task.
-func (q *Queue) Submit(fn func() error) *Task {
+func (q *Queue) Submit(fn func(ctx context.Context) error) *Task {
 	t := NewTask(fn)
 	q.Enqueue(t)
 	return t
@@ -48,7 +48,7 @@ func (q *Queue) Submit(fn func() error) *Task {
 
 // Attempts any tasks which are due and updates the task schedule. Returns true
 // if there is more work to do.
-func (q *Queue) Dispatch() bool {
+func (q *Queue) Dispatch(ctx context.Context) bool {
 	var next time.Time
 	now := q.now()
 
@@ -62,7 +62,7 @@ func (q *Queue) Dispatch() bool {
 	for _, task := range tasks {
 		due := task.NextAttempt().Before(now)
 		if due {
-			n, _ := task.Attempt()
+			n, _ := task.Attempt(ctx)
 			if !task.Done() && n.Before(next) {
 				next = n
 			}
@@ -92,7 +92,7 @@ func (q *Queue) Run(ctx context.Context) {
 	q.wake = make(chan interface{})
 
 	for {
-		q.Dispatch()
+		q.Dispatch(ctx)
 
 		select {
 		case <-time.After(q.next.Sub(q.now())):

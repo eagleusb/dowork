@@ -1,6 +1,7 @@
 package work
 
 import (
+	"context"
 	"errors"
 	"math"
 	"time"
@@ -30,7 +31,7 @@ type Task struct {
 
 	attempts    int
 	err         error
-	fn          func() error
+	fn          func(ctx context.Context) error
 	nextAttempt time.Time
 
 	maxAttempts int
@@ -38,7 +39,7 @@ type Task struct {
 }
 
 // Creates a new task for a given function.
-func NewTask(fn func() error) *Task {
+func NewTask(fn func(ctx context.Context) error) *Task {
 	return &Task{
 		Metadata: make(map[string]string),
 
@@ -55,7 +56,7 @@ func NewTask(fn func() error) *Task {
 // Otherwise, the error returned from the task function is returned to the
 // caller. If an error is returned for which errors.Is(err, ErrDoNotReattempt)
 // is true, the caller should not call Attempt again.
-func (t *Task) Attempt() (time.Time, error) {
+func (t *Task) Attempt(ctx context.Context) (time.Time, error) {
 	if t.err == nil && t.attempts > 0 {
 		t.err = ErrAlreadyComplete
 		return time.Time{}, ErrAlreadyComplete
@@ -69,7 +70,7 @@ func (t *Task) Attempt() (time.Time, error) {
 	}
 
 	t.attempts += 1
-	t.err = t.fn()
+	t.err = t.fn(ctx)
 	if t.err == nil {
 		return time.Time{}, nil
 	}
