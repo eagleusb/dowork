@@ -47,3 +47,24 @@ func TestQueue(t *testing.T) {
 	q.Dispatch()
 	assert.Equal(t, 3, calls)
 }
+
+func TestTasksQueueingTasks(t *testing.T) {
+	q := NewQueue()
+
+	var calls int
+	q.Task(func() error {
+		// Should not deadlock
+		q.Task(func() error {
+			calls++
+			return nil
+		})
+		calls++
+		return nil
+	})
+
+	q.Dispatch()
+	assert.Equal(t, 1, calls)
+
+	q.Dispatch()
+	assert.Equal(t, 2, calls)
+}

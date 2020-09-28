@@ -57,12 +57,14 @@ func NewTask(fn func() error) *Task {
 // is true, the caller should not call Attempt again.
 func (t *Task) Attempt() (time.Time, error) {
 	if t.err == nil && t.attempts > 0 {
+		t.err = ErrAlreadyComplete
 		return time.Time{}, ErrAlreadyComplete
 	}
 	if errors.Is(t.err, ErrDoNotReattempt) {
 		return time.Time{}, t.err
 	}
 	if t.attempts >= t.maxAttempts {
+		t.err = ErrMaxRetriesExceeded
 		return time.Time{}, ErrMaxRetriesExceeded
 	}
 
@@ -108,4 +110,14 @@ func (t *Task) Attempts() int {
 // has not been attempted before.
 func (t *Task) NextAttempt() time.Time {
 	return t.nextAttempt
+}
+
+// Returns true if this task was completed, successfully or not.
+func (t *Task) Done() bool {
+	if t.attempts == 0 {
+		return false
+	}
+	return t.err == nil ||
+		t.err == ErrDoNotReattempt ||
+		t.err == ErrMaxRetriesExceeded
 }

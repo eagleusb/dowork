@@ -28,15 +28,14 @@ func (q *Queue) Now(now func() time.Time) {
 	q.now = now
 }
 
-// Enqueues a task and returns the queue.
-func (q *Queue) Enqueue(t *Task) *Queue {
+// Enqueues a task.
+func (q *Queue) Enqueue(t *Task) {
 	q.mutex.Lock()
 	q.tasks = append(q.tasks, t)
 	q.mutex.Unlock()
 	if q.wake != nil {
 		q.wake <- nil
 	}
-	return q
 }
 
 // Creates and enqueues a new task, returning the new task.
@@ -48,29 +47,36 @@ func (q *Queue) Task(fn func() error) *Task {
 
 // Attempts any tasks which are due and updates the task schedule.
 func (q *Queue) Dispatch() {
-	q.mutex.Lock()
-	defer q.mutex.Unlock()
-
 	var next time.Time
 	now := q.now()
-	newTasks := make([]*Task, 0, len(q.tasks))
-	for _, task := range q.tasks {
+
+	// In order to avoid deadlocking if a task queues another task, we make a
+	// copy of the task list and release the mutex while executing them.
+	q.mutex.Lock()
+	tasks := make([]*Task, len(q.tasks))
+	copy(tasks, q.tasks)
+	q.mutex.Unlock()
+
+	for _, task := range tasks {
 		due := task.NextAttempt().Before(now)
 		if due {
-			n, err := task.Attempt()
-			if err == nil ||
-				err == ErrDoNotReattempt ||
-				err == ErrMaxRetriesExceeded {
-				continue
-			}
-			if n.Before(next) {
+			n, _ := task.Attempt()
+			if !task.Done() && n.Before(next) {
 				next = n
 			}
 		}
-		newTasks = append(newTasks, task) // Retry
 	}
 
+	q.mutex.Lock()
+	newTasks := make([]*Task, 0, len(q.tasks))
+	for _, task := range q.tasks {
+		if !task.Done() {
+			newTasks = append(newTasks, task)
+		}
+	}
 	q.tasks = newTasks
+	q.mutex.Unlock()
+
 	q.next = next
 }
 
