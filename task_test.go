@@ -56,3 +56,27 @@ func TestNoReattempt(t *testing.T) {
 	_, err = task.Attempt()
 	assert.True(t, errors.Is(err, ErrDoNotReattempt))
 }
+
+func TestBackoff(t *testing.T) {
+	task := NewTask(func() error {
+		return errors.New("error")
+	})
+
+	due, _ := task.Attempt()
+	assert.Equal(t, now.Add(2 * time.Minute), due)
+
+	due, _ = task.Attempt()
+	assert.Equal(t, now.Add(4 * time.Minute), due)
+
+	due, _ = task.Attempt()
+	assert.Equal(t, now.Add(8 * time.Minute), due)
+
+	due, _ = task.Attempt()
+	assert.Equal(t, now.Add(16 * time.Minute), due)
+
+	due, _ = task.Attempt()
+	assert.Equal(t, now.Add(30 * time.Minute), due)
+
+	due, _ = task.Attempt()
+	assert.Equal(t, now.Add(30 * time.Minute), due)
+}
