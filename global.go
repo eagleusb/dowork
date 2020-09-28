@@ -1,5 +1,9 @@
 package work
 
+import (
+	"context"
+)
+
 var globalQueue *Queue
 
 func ensureQueue() {
@@ -7,7 +11,7 @@ func ensureQueue() {
 		return
 	}
 	globalQueue = NewQueue()
-	go globalQueue.Run()
+	go globalQueue.Run(context.TODO())
 }
 
 // Enqueues a task in the global queue.

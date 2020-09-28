@@ -1,6 +1,7 @@
 package work
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -67,4 +68,28 @@ func TestTasksQueueingTasks(t *testing.T) {
 
 	q.Dispatch()
 	assert.Equal(t, 2, calls)
+}
+
+func TestRun(t *testing.T) {
+	q := NewQueue()
+	var (
+		calledA bool
+		calledB bool
+	)
+	q.Submit(func() error {
+		calledA = true
+		return errors.New("error")
+	})
+	ctx, cancel := context.WithCancel(context.Background())
+	go q.Run(ctx)
+	time.Sleep(50 * time.Millisecond)
+	assert.True(t, calledA)
+
+	q.Submit(func() error {
+		calledB = true
+		return errors.New("error")
+	})
+	time.Sleep(50 * time.Millisecond)
+	assert.True(t, calledB)
+	cancel()
 }

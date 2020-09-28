@@ -1,6 +1,7 @@
 package work
 
 import (
+	"context"
 	"errors"
 	"sync"
 	"time"
@@ -45,8 +46,9 @@ func (q *Queue) Submit(fn func() error) *Task {
 	return t
 }
 
-// Attempts any tasks which are due and updates the task schedule.
-func (q *Queue) Dispatch() {
+// Attempts any tasks which are due and updates the task schedule. Returns true
+// if there is more work to do.
+func (q *Queue) Dispatch() bool {
 	var next time.Time
 	now := q.now()
 
@@ -78,21 +80,25 @@ func (q *Queue) Dispatch() {
 	q.mutex.Unlock()
 
 	q.next = next
+	return len(newTasks) != 0
 }
 
-// Runs the task queue. Never returns.
-func (q *Queue) Run() {
+// Runs the task queue. Blocks until the context is cancelled.
+func (q *Queue) Run(ctx context.Context) {
 	if q.wake != nil {
 		panic(errors.New("This queue is already running on another goroutine"))
 	}
 
 	q.wake = make(chan interface{})
+
 	for {
 		q.Dispatch()
 
 		select {
 		case <-time.After(q.next.Sub(q.now())):
 			break
+		case <-ctx.Done():
+			return
 		case <-q.wake:
 			break
 		}
