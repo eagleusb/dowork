@@ -27,8 +27,9 @@ var (
 // Stores state for a task which shall be or has been executed. Each task may
 // only be executed successfully once.
 type Task struct {
-	Metadata map[string]string
+	Metadata map[string]interface{}
 
+	after       func(ctx context.Context, err error)
 	attempts    int
 	err         error
 	fn          func(ctx context.Context) error
@@ -41,7 +42,7 @@ type Task struct {
 // Creates a new task for a given function.
 func NewTask(fn func(ctx context.Context) error) *Task {
 	return &Task{
-		Metadata: make(map[string]string),
+		Metadata: make(map[string]interface{}),
 
 		fn:          fn,
 		maxAttempts: 10,
@@ -59,19 +60,35 @@ func NewTask(fn func(ctx context.Context) error) *Task {
 func (t *Task) Attempt(ctx context.Context) (time.Time, error) {
 	if t.err == nil && t.attempts > 0 {
 		t.err = ErrAlreadyComplete
+		if t.after != nil {
+			t.after(ctx, t.err)
+			t.after = nil
+		}
 		return time.Time{}, ErrAlreadyComplete
 	}
 	if errors.Is(t.err, ErrDoNotReattempt) {
+		if t.after != nil {
+			t.after(ctx, t.err)
+			t.after = nil
+		}
 		return time.Time{}, t.err
 	}
 	if t.attempts >= t.maxAttempts {
 		t.err = ErrMaxRetriesExceeded
+		if t.after != nil {
+			t.after(ctx, t.err)
+			t.after = nil
+		}
 		return time.Time{}, ErrMaxRetriesExceeded
 	}
 
 	t.attempts += 1
 	t.err = t.fn(ctx)
 	if t.err == nil {
+		if t.after != nil {
+			t.after(ctx, t.err)
+			t.after = nil
+		}
 		return time.Time{}, nil
 	}
 	next := time.Duration(int(math.Pow(2, float64(t.attempts)))) * time.Minute
@@ -121,4 +138,15 @@ func (t *Task) Done() bool {
 	return t.err == nil ||
 		t.err == ErrDoNotReattempt ||
 		t.err == ErrMaxRetriesExceeded
+}
+
+// Sets a function which will be executed once the task is completed,
+// successfully or not. The final result (nil or an error) is passed to the
+// callee.
+func (t *Task) After(fn func(ctx context.Context, err error)) *Task {
+	if t.after != nil {
+		panic(errors.New("This task already has an 'After' function assigned"))
+	}
+	t.after = fn
+	return t
 }

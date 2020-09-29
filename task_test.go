@@ -105,3 +105,33 @@ func TestMaxAttempts(t *testing.T) {
 	_, err = task.Attempt(context.TODO())
 	assert.Equal(t, err, ErrMaxRetriesExceeded)
 }
+
+func TestAfter(t *testing.T) {
+	var (
+		afterCalls int
+		taskCalls  int
+	)
+	task := NewTask(func(ctx context.Context) error {
+		taskCalls++
+		if taskCalls >= 2 {
+			return nil
+		}
+		return errors.New("error")
+	}).After(func(ctx context.Context, err error) {
+		afterCalls += 1
+	})
+
+	_, err := task.Attempt(context.TODO())
+	assert.NotNil(t, err)
+	assert.Equal(t, 1, taskCalls)
+	assert.Equal(t, 0, afterCalls)
+
+	_, err = task.Attempt(context.TODO())
+	assert.Nil(t, err)
+	assert.Equal(t, 2, taskCalls)
+	assert.Equal(t, 1, afterCalls)
+
+	task.Attempt(context.TODO())
+	assert.Equal(t, 2, taskCalls)
+	assert.Equal(t, 1, afterCalls)
+}
