@@ -37,6 +37,7 @@ type Task struct {
 
 	maxAttempts int
 	maxTimeout  time.Duration
+	within      time.Duration
 }
 
 // Creates a new task for a given function.
@@ -80,6 +81,12 @@ func (t *Task) Attempt(ctx context.Context) (time.Time, error) {
 			t.after = nil
 		}
 		return time.Time{}, ErrMaxRetriesExceeded
+	}
+
+	if t.within != time.Duration(0) {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, t.within)
+		defer cancel()
 	}
 
 	t.attempts += 1
@@ -149,4 +156,9 @@ func (t *Task) After(fn func(ctx context.Context, err error)) *Task {
 	}
 	t.after = fn
 	return t
+}
+
+// Specifies an upper limit for the duration of each attempt.
+func (t *Task) Within(deadline time.Duration) {
+	t.within = deadline
 }
