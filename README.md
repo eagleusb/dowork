@@ -1,4 +1,4 @@
-# dowork [![godoc](https://godoc.org/git.sr.ht/~sircmpwn/getopt?status.svg)](https://godoc.org/git.sr.ht/~sircmpwn/getopt) [![builds.sr.ht status](https://builds.sr.ht/~sircmpwn/dowork.svg)](https://builds.sr.ht/~sircmpwn/dowork)
+# dowork [![godoc](https://godoc.org/git.sr.ht/~sircmpwn/dowork?status.svg)](https://godoc.org/git.sr.ht/~sircmpwn/dowork) [![builds.sr.ht status](https://builds.sr.ht/~sircmpwn/dowork.svg)](https://builds.sr.ht/~sircmpwn/dowork)
 
 dowork is a generic task queueing system for Go programs. It queues, executes,
 and reschedules tasks in Goroutine in-process.
