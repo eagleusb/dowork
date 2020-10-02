@@ -28,7 +28,7 @@ func TestAttempt(t *testing.T) {
 			return taskerr
 		}
 		return nil
-	})
+	}).Retries(10)
 
 	due, err := task.Attempt(context.TODO())
 	assert.Equal(t, taskerr, err)
@@ -50,7 +50,7 @@ func TestNoReattempt(t *testing.T) {
 			t.Error("Task called repeatedly despite requesting no re-attempt")
 		}
 		return fmt.Errorf("Do not reattempt this task; %w", ErrDoNotReattempt)
-	})
+	}).Retries(10)
 
 	_, err := task.Attempt(context.TODO())
 	assert.True(t, errors.Is(err, ErrDoNotReattempt))
@@ -62,7 +62,7 @@ func TestNoReattempt(t *testing.T) {
 func TestBackoff(t *testing.T) {
 	task := NewTask(func(ctx context.Context) error {
 		return errors.New("error")
-	})
+	}).Retries(10)
 
 	due, _ := task.Attempt(context.TODO())
 	assert.Equal(t, now.Add(2 * time.Minute), due)
@@ -120,7 +120,7 @@ func TestAfter(t *testing.T) {
 		return errors.New("error")
 	}).After(func(ctx context.Context, err error) {
 		afterCalls += 1
-	})
+	}).Retries(10)
 
 	_, err := task.Attempt(context.TODO())
 	assert.NotNil(t, err)

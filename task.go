@@ -49,7 +49,7 @@ func NewTask(fn TaskFunc) *Task {
 		Metadata: make(map[string]interface{}),
 
 		fn:          fn,
-		maxAttempts: 10,
+		maxAttempts: 1,
 		maxTimeout:  30 * time.Minute,
 	}
 }
@@ -109,7 +109,7 @@ func (t *Task) Attempt(ctx context.Context) (time.Time, error) {
 }
 
 // Set the maximum number of retries on failure, or -1 to attempt indefinitely.
-// By default, a task will be retried a maximum of 10 times.
+// By default, tasks are not retried on failure.
 func (t *Task) Retries(n int) *Task {
 	if n < -1 {
 		panic(errors.New("Invalid input to Task.Retries"))

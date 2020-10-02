@@ -23,14 +23,15 @@ func TestQueue(t *testing.T) {
 	})
 
 	var attempts int
-	q.Submit(func(ctx context.Context) error {
+	task := NewTask(func(ctx context.Context) error {
 		calls++
 		attempts++
 		if attempts >= 2 {
 			return nil
 		}
 		return errors.New("error")
-	})
+	}).Retries(10)
+	q.Enqueue(task)
 
 	q.Dispatch(context.TODO())
 	assert.Equal(t, 2, calls)
