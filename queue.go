@@ -95,9 +95,13 @@ func (q *Queue) Enqueue(t *Task) error {
 	return nil
 }
 
-// Creates and enqueues a new task, returning the new task.
+// Creates and enqueues a new task, returning the new task. Note that the
+// caller cannot customize settings on the task without creating a race
+// condition; so attempting to will panic. See NewTask and (*Queue).Enqueue to
+// create tasks with customized options.
 func (q *Queue) Submit(fn TaskFunc) (*Task, error) {
 	t := NewTask(fn)
+	t.immutable = true
 	err := q.Enqueue(t)
 	return t, err
 }

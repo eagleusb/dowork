@@ -38,6 +38,7 @@ type Task struct {
 	fn          TaskFunc
 	nextAttempt time.Time
 
+	immutable   bool
 	maxAttempts int
 	maxTimeout  time.Duration
 	within      time.Duration
@@ -114,6 +115,9 @@ func (t *Task) Retries(n int) *Task {
 	if n < -1 {
 		panic(errors.New("Invalid input to Task.Retries"))
 	}
+	if t.immutable {
+		panic(errors.New("Attempted to configure immutable task"))
+	}
 	t.maxAttempts = n
 	return t
 }
@@ -124,8 +128,42 @@ func (t *Task) MaxTimeout(d time.Duration) *Task {
 	if d < 0 {
 		panic(errors.New("Invalid timeout provided to Task.MaxTimeout"))
 	}
+	if t.immutable {
+		panic(errors.New("Attempted to configure immutable task"))
+	}
 	t.maxTimeout = d
 	return t
+}
+
+// Sets a function which will be executed once the task is completed,
+// successfully or not. The final result (nil or an error) is passed to the
+// callee.
+func (t *Task) After(fn func(ctx context.Context, err error)) *Task {
+	if t.after != nil {
+		panic(errors.New("This task already has an 'After' function assigned"))
+	}
+	if t.immutable {
+		panic(errors.New("Attempted to configure immutable task"))
+	}
+	t.after = fn
+	return t
+}
+
+// Specifies an upper limit for the duration of each attempt.
+func (t *Task) Within(deadline time.Duration) {
+	if t.immutable {
+		panic(errors.New("Attempted to configure immutable task"))
+	}
+	t.within = deadline
+}
+
+// Returns the result of the task. The task must have been completed for this
+// to be valid.
+func (t *Task) Result() error {
+	if !t.done {
+		panic(errors.New("(*Task).Result() called on incomplete task"))
+	}
+	return t.err
 }
 
 // Returns the number of times this task has been attempted
@@ -142,24 +180,4 @@ func (t *Task) NextAttempt() time.Time {
 // Returns true if this task was completed, successfully or not.
 func (t *Task) Done() bool {
 	return t.done
-}
-
-// Sets a function which will be executed once the task is completed,
-// successfully or not. The final result (nil or an error) is passed to the
-// callee.
-func (t *Task) After(fn func(ctx context.Context, err error)) *Task {
-	if t.after != nil {
-		panic(errors.New("This task already has an 'After' function assigned"))
-	}
-	t.after = fn
-	return t
-}
-
-// Specifies an upper limit for the duration of each attempt.
-func (t *Task) Within(deadline time.Duration) {
-	t.within = deadline
-}
-
-func (t *Task) Result() error {
-	return t.err
 }
