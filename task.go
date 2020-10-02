@@ -31,6 +31,7 @@ type Task struct {
 
 	after       func(ctx context.Context, err error)
 	attempts    int
+	done        bool
 	err         error
 	fn          func(ctx context.Context) error
 	nextAttempt time.Time
@@ -59,28 +60,26 @@ func NewTask(fn func(ctx context.Context) error) *Task {
 // caller. If an error is returned for which errors.Is(err, ErrDoNotReattempt)
 // is true, the caller should not call Attempt again.
 func (t *Task) Attempt(ctx context.Context) (time.Time, error) {
-	if t.err == nil && t.attempts > 0 {
-		t.err = ErrAlreadyComplete
-		if t.after != nil {
-			t.after(ctx, t.err)
-			t.after = nil
-		}
-		return time.Time{}, ErrAlreadyComplete
-	}
-	if errors.Is(t.err, ErrDoNotReattempt) {
-		if t.after != nil {
-			t.after(ctx, t.err)
-			t.after = nil
+	if t.done {
+		if t.err == nil {
+			return time.Time{}, ErrAlreadyComplete
 		}
 		return time.Time{}, t.err
 	}
-	if t.attempts >= t.maxAttempts {
+
+	t.attempts += 1
+	if t.attempts > t.maxAttempts {
 		t.err = ErrMaxRetriesExceeded
+		t.done = true
 		if t.after != nil {
 			t.after(ctx, t.err)
 			t.after = nil
 		}
 		return time.Time{}, ErrMaxRetriesExceeded
+	}
+
+	if errors.Is(t.err, ErrDoNotReattempt) {
+		return time.Time{}, t.err
 	}
 
 	if t.within != time.Duration(0) {
@@ -89,15 +88,16 @@ func (t *Task) Attempt(ctx context.Context) (time.Time, error) {
 		defer cancel()
 	}
 
-	t.attempts += 1
 	t.err = t.fn(ctx)
 	if t.err == nil {
+		t.done = true
 		if t.after != nil {
 			t.after(ctx, t.err)
 			t.after = nil
 		}
 		return time.Time{}, nil
 	}
+
 	next := time.Duration(int(math.Pow(2, float64(t.attempts)))) * time.Minute
 	if next > t.maxTimeout {
 		next = t.maxTimeout
@@ -139,12 +139,7 @@ func (t *Task) NextAttempt() time.Time {
 
 // Returns true if this task was completed, successfully or not.
 func (t *Task) Done() bool {
-	if t.attempts == 0 {
-		return false
-	}
-	return t.err == nil ||
-		t.err == ErrDoNotReattempt ||
-		t.err == ErrMaxRetriesExceeded
+	return t.done
 }
 
 // Sets a function which will be executed once the task is completed,

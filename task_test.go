@@ -36,6 +36,7 @@ func TestAttempt(t *testing.T) {
 
 	_, err = task.Attempt(context.TODO())
 	assert.Nil(t, err)
+	assert.True(t, task.Done())
 
 	_, err = task.Attempt(context.TODO())
 	assert.Equal(t, ErrAlreadyComplete, err)

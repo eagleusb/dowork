@@ -11,7 +11,7 @@ func ensureQueue() {
 		return
 	}
 	globalQueue = NewQueue()
-	go globalQueue.Run(context.TODO())
+	globalQueue.Start(context.TODO())
 }
 
 // Enqueues a task in the global queue.
@@ -20,9 +20,13 @@ func Enqueue(t *Task) {
 	globalQueue.Enqueue(t)
 }
 
-func Submit(fn func(ctx context.Context) error) *Task {
+// See (*Queue).Submit
+func Submit(fn func(ctx context.Context) error) (*Task, error) {
 	ensureQueue()
 	return globalQueue.Submit(fn)
 }
 
-
+// Stops accepting new tasks and blocks until all queued tasks are completed.
+func Shutdown() {
+	globalQueue.Shutdown()
+}

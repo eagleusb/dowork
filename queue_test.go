@@ -93,3 +93,32 @@ func TestRun(t *testing.T) {
 	assert.True(t, calledB)
 	cancel()
 }
+
+func TestStart(t *testing.T) {
+	q := NewQueue()
+	var (
+		calledA bool
+		calledB bool
+	)
+	q.Submit(func(ctx context.Context) error {
+		calledA = true
+		return nil
+	})
+	q.Start(context.TODO())
+	time.Sleep(50 * time.Millisecond)
+	assert.True(t, calledA)
+
+	q.Submit(func(ctx context.Context) error {
+		calledB = true
+		return nil
+	})
+	q.Shutdown()
+	time.Sleep(50 * time.Millisecond)
+	assert.True(t, calledB)
+
+	_, err := q.Submit(func(ctx context.Context) error {
+		t.Error("Should not be called")
+		return nil
+	})
+	assert.Equal(t, ErrQueueShuttingDown, err)
+}
