@@ -9,9 +9,8 @@
 //		"git.sr.ht/~sircmpwn/dowork"
 //	)
 //
-//	// ...
 //	work.Submit(func(ctx context.Context) error {
-//		// Thing which might fail...
+//		// ...do work...
 //		return nil
 //	})
 //
@@ -24,9 +23,9 @@
 //	task := work.NewTask(func(ctx context.Context) error {
 //		// ...
 //	}).
-//		Retries(5).						// Maximum number of attempts
+//		Retries(5).			// Maximum number of attempts
 //		MaxTimeout(10 * time.Minute).	// Maximum timeout between attempts
-//		Within(10 * time.Second).		// Deadline for each attempt
+//		Within(10 * time.Second).	// Deadline for each attempt
 //		After(func(ctx context.Context, err error) {
 //			// Executed once the task completes, successful or not
 //		})
