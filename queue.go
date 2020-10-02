@@ -79,6 +79,8 @@ func (q *Queue) Now(now func() time.Time) {
 }
 
 // Enqueues a task.
+//
+// An error will only be returned if the queue has been shut down.
 func (q *Queue) Enqueue(t *Task) error {
 	if atomic.LoadInt32(&q.accept) == 0 {
 		return ErrQueueShuttingDown
@@ -99,6 +101,8 @@ func (q *Queue) Enqueue(t *Task) error {
 // caller cannot customize settings on the task without creating a race
 // condition; so attempting to will panic. See NewTask and (*Queue).Enqueue to
 // create tasks with customized options.
+//
+// An error will only be returned if the queue has been shut down.
 func (q *Queue) Submit(fn TaskFunc) (*Task, error) {
 	t := NewTask(fn)
 	t.immutable = true
