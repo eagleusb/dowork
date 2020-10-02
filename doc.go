@@ -32,6 +32,8 @@
 //		})
 //	work.Enqueue(task)
 //
+// Retries are conducted with an exponential backoff.
+//
 // You may also manage your own work queues. Use NewQueue() to obtain a queue,
 // (*Queue).Dispatch() to execute all overdue tasks, and (*Queue).Start() to
 // spin up a goroutine and start dispatching tasks automatically.
