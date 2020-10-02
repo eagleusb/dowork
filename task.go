@@ -159,3 +159,7 @@ func (t *Task) After(fn func(ctx context.Context, err error)) *Task {
 func (t *Task) Within(deadline time.Duration) {
 	t.within = deadline
 }
+
+func (t *Task) Result() error {
+	return t.err
+}

@@ -10,7 +10,7 @@ func ensureQueue() {
 	if globalQueue != nil {
 		return
 	}
-	globalQueue = NewQueue()
+	globalQueue = NewQueue("global")
 	globalQueue.Start(context.TODO())
 }
 

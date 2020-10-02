@@ -11,7 +11,7 @@ import (
 
 func TestQueue(t *testing.T) {
 	now := time.Now().UTC()
-	q := NewQueue()
+	q := NewQueue("test")
 	q.Now(func() time.Time {
 		return now
 	})
@@ -50,7 +50,7 @@ func TestQueue(t *testing.T) {
 }
 
 func TestTasksQueueingTasks(t *testing.T) {
-	q := NewQueue()
+	q := NewQueue("test")
 
 	var calls int
 	q.Submit(func(ctx context.Context) error {
@@ -71,7 +71,7 @@ func TestTasksQueueingTasks(t *testing.T) {
 }
 
 func TestRun(t *testing.T) {
-	q := NewQueue()
+	q := NewQueue("test")
 	var (
 		calledA bool
 		calledB bool
@@ -95,7 +95,7 @@ func TestRun(t *testing.T) {
 }
 
 func TestStart(t *testing.T) {
-	q := NewQueue()
+	q := NewQueue("test")
 	var (
 		calledA bool
 		calledB bool

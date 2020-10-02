@@ -6,14 +6,50 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
 var (
 	ErrQueueShuttingDown = errors.New("Queue is shutting down; new tasks are not being accepted")
+
+	tasksQueued = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "queue_tasks_enqueued_total",
+		Help: "Total number of tasks submitted to a task queue",
+	}, []string{"queue"})
+	tasksRun = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "queue_tasks_run_total",
+		Help: "Total number of tasks run by a task queue",
+	}, []string{"queue"})
+	tasksCompleted = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "queue_tasks_completed_total",
+		Help: "Total number of tasks completed by a task queue",
+	}, []string{"queue"})
+	tasksSucceeded = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "queue_tasks_succeeded_total",
+		Help: "Total number of tasks which completed in a success state",
+	}, []string{"queue"})
+	tasksFailed = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "queue_tasks_failed_total",
+		Help: "Total number of tasks which completed in a failed state",
+	}, []string{"queue"})
+
+	taskAttempts = promauto.NewHistogramVec(prometheus.HistogramOpts{
+		Name:    "queue_task_attempts",
+		Help:    "Number of attempts required for each task to be completed",
+		Buckets: []float64{1, 2, 3, 5, 8, 13, 21},
+	}, []string{"queue"})
+	taskDurations = promauto.NewHistogramVec(prometheus.HistogramOpts{
+		Name:    "queue_task_duration_sections",
+		Help:    "Duration in seconds of each task attempt",
+		Buckets: []float64{10, 30, 60, 90, 120, 300, 600, 900, 1800},
+	}, []string{"queue"})
 )
 
 type Queue struct {
 	mutex sync.Mutex
+	name  string
 	tasks []*Task
 	next  time.Time
 	now   func() time.Time
@@ -25,9 +61,11 @@ type Queue struct {
 	started  bool // Only used to enforce constraints
 }
 
-// Creates a new task queue.
-func NewQueue() *Queue {
+// Creates a new task queue. The name of the task queue is used in Prometheus
+// label names and must match [a-zA-Z0-9:_] (snake case is used by convention).
+func NewQueue(name string) *Queue {
 	return &Queue{
+		name: name,
 		now: func() time.Time {
 			return time.Now().UTC()
 		},
@@ -45,6 +83,8 @@ func (q *Queue) Enqueue(t *Task) error {
 	if atomic.LoadInt32(&q.accept) == 0 {
 		return ErrQueueShuttingDown
 	}
+
+	tasksQueued.WithLabelValues(q.name).Add(1)
 
 	q.mutex.Lock()
 	q.tasks = append(q.tasks, t)
@@ -78,7 +118,13 @@ func (q *Queue) Dispatch(ctx context.Context) bool {
 	for _, task := range tasks {
 		due := task.NextAttempt().Before(now)
 		if due {
+			if task.Attempts() == 0 {
+				tasksRun.WithLabelValues(q.name).Add(1)
+			}
+			timer := prometheus.NewTimer(
+				taskDurations.WithLabelValues(q.name))
 			n, _ := task.Attempt(ctx)
+			timer.ObserveDuration()
 			if !task.Done() && n.Before(next) {
 				next = n
 			}
@@ -90,6 +136,14 @@ func (q *Queue) Dispatch(ctx context.Context) bool {
 	for _, task := range q.tasks {
 		if !task.Done() {
 			newTasks = append(newTasks, task)
+		} else {
+			if task.Result() == nil {
+				tasksSucceeded.WithLabelValues(q.name).Add(1)
+			} else {
+				tasksFailed.WithLabelValues(q.name).Add(1)
+			}
+			tasksCompleted.WithLabelValues(q.name).Add(1)
+			taskAttempts.WithLabelValues(q.name).Observe(float64(task.Attempts()))
 		}
 	}
 	q.tasks = newTasks

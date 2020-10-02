@@ -42,3 +42,42 @@ goroutine and start dispatching tasks automatically.
 No such functionality is provided OOTB, but you may find this package useful in
 doing the actual queueing work for your own distributed work queue. Such an
 integeration is left as an exercise to the reader.
+
+## Instrumentation
+
+Instrumentation is provided via [Prometheus][prom] and the
+[client_golang][client_golang] library. Relevant metrics are prefixed with
+`queue_` in the metric name.
+
+[prom]: https://prometheus.io
+[client_golang]: https://github.com/prometheus/client_golang
+
+A common pattern for soft restarting web servers is to shut down the
+[http.Server][http.Server], allowing the new web server process to start up and
+begin accepting new connections, then allow the queue to finish executing any
+pending tasks before terminating the process. If this describes your program,
+note that you may want to provide Prometheus metrics on a secondary http.Server
+on a random port, so that you may monitor the queue shutdown. Something similar
+to the following will set up a secondary HTTP server for this purpose:
+
+[http.Server]: https://golang.org/pkg/net/http/#Server
+
+```go
+import (
+  "log"
+  "net"
+  "net/http"
+
+  "github.com/prometheus/client_golang/prometheus/promhttp"
+)
+
+mux := &http.ServeMux{}
+mux.Handle("/metrics", promhttp.Handler())
+server := &http.Server{Handler: mux}
+listen, err := net.Listen("tcp", ":0")
+if err != nil {
+  panic(err)
+}
+log.Printf("Prometheus listening on :%d", listen.Addr().(*net.TCPAddr).Port)
+go server.Serve(listen)
+```

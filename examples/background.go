@@ -4,18 +4,32 @@ import (
 	"bufio"
 	"context"
 	"log"
+	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"strings"
 	"time"
 
 	"git.sr.ht/~sircmpwn/dowork"
+
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func main() {
 	log.Println("Starting queue")
 	log.Println("SIGINT to terminate")
 	work.Start()
+
+	mux := &http.ServeMux{}
+	mux.Handle("/metrics", promhttp.Handler())
+	server := &http.Server{Handler: mux}
+	listen, err := net.Listen("tcp", ":0")
+	if err != nil {
+		panic(err)
+	}
+	log.Printf("Prometheus listening on :%d", listen.Addr().(*net.TCPAddr).Port)
+	go server.Serve(listen)
 
 	ntasks := 0
 	sig := make(chan os.Signal, 1)
