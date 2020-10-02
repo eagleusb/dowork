@@ -14,6 +14,11 @@ func ensureQueue() {
 	globalQueue.Start(context.TODO())
 }
 
+// Ensures that the global queue is started
+func Start() {
+	ensureQueue()
+}
+
 // Enqueues a task in the global queue.
 func Enqueue(t *Task) {
 	ensureQueue()

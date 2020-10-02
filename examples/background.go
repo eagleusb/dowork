@@ -15,8 +15,7 @@ import (
 func main() {
 	log.Println("Starting queue")
 	log.Println("SIGINT to terminate")
-	queue := work.NewQueue()
-	queue.Start(context.Background())
+	work.Start()
 
 	ntasks := 0
 	sig := make(chan os.Signal, 1)
@@ -35,7 +34,7 @@ func main() {
 			}
 
 			ntasks += 1
-			queue.Submit(func(n int) func(context.Context) error {
+			work.Submit(func(n int) func(context.Context) error {
 				return func(ctx context.Context) error {
 					log.Printf("Task %d started", n)
 					select {
@@ -53,6 +52,6 @@ func main() {
 
 	<-sig
 	log.Println("Shutting down queue...")
-	queue.Shutdown()
+	work.Shutdown()
 	log.Println("Shut down.")
 }
