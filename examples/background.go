@@ -29,7 +29,7 @@ func main() {
 			input, _ := reader.ReadString('\n')
 			d, err := time.ParseDuration(strings.Trim(input, "\n"))
 			if err != nil {
-				log.Println("%v", err)
+				log.Printf("error: %v", err)
 				continue
 			}
 
