@@ -56,7 +56,7 @@ func (q *Queue) Enqueue(t *Task) error {
 }
 
 // Creates and enqueues a new task, returning the new task.
-func (q *Queue) Submit(fn func(ctx context.Context) error) (*Task, error) {
+func (q *Queue) Submit(fn TaskFunc) (*Task, error) {
 	t := NewTask(fn)
 	err := q.Enqueue(t)
 	return t, err

@@ -24,6 +24,8 @@ var (
 	}
 )
 
+type TaskFunc func(ctx context.Context) error
+
 // Stores state for a task which shall be or has been executed. Each task may
 // only be executed successfully once.
 type Task struct {
@@ -33,7 +35,7 @@ type Task struct {
 	attempts    int
 	done        bool
 	err         error
-	fn          func(ctx context.Context) error
+	fn          TaskFunc
 	nextAttempt time.Time
 
 	maxAttempts int
@@ -42,7 +44,7 @@ type Task struct {
 }
 
 // Creates a new task for a given function.
-func NewTask(fn func(ctx context.Context) error) *Task {
+func NewTask(fn TaskFunc) *Task {
 	return &Task{
 		Metadata: make(map[string]interface{}),
 

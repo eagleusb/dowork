@@ -34,7 +34,7 @@ func main() {
 			}
 
 			ntasks += 1
-			work.Submit(func(n int) func(context.Context) error {
+			work.Submit(func(n int) work.TaskFunc {
 				return func(ctx context.Context) error {
 					log.Printf("Task %d started", n)
 					select {
