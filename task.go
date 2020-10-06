@@ -31,7 +31,7 @@ type TaskFunc func(ctx context.Context) error
 type Task struct {
 	Metadata map[string]interface{}
 
-	after       func(ctx context.Context, err error)
+	after       func(ctx context.Context, task *Task)
 	attempts    int
 	done        bool
 	err         error
@@ -75,7 +75,7 @@ func (t *Task) Attempt(ctx context.Context) (time.Time, error) {
 		t.err = ErrMaxRetriesExceeded
 		t.done = true
 		if t.after != nil {
-			t.after(ctx, t.err)
+			t.after(ctx, t)
 			t.after = nil
 		}
 		return time.Time{}, ErrMaxRetriesExceeded
@@ -95,7 +95,7 @@ func (t *Task) Attempt(ctx context.Context) (time.Time, error) {
 	if t.err == nil {
 		t.done = true
 		if t.after != nil {
-			t.after(ctx, t.err)
+			t.after(ctx, t)
 			t.after = nil
 		}
 		return time.Time{}, nil
@@ -138,7 +138,7 @@ func (t *Task) MaxTimeout(d time.Duration) *Task {
 // Sets a function which will be executed once the task is completed,
 // successfully or not. The final result (nil or an error) is passed to the
 // callee.
-func (t *Task) After(fn func(ctx context.Context, err error)) *Task {
+func (t *Task) After(fn func(ctx context.Context, task *Task)) *Task {
 	if t.after != nil {
 		panic(errors.New("This task already has an 'After' function assigned"))
 	}

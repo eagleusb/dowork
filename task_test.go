@@ -118,7 +118,7 @@ func TestAfter(t *testing.T) {
 			return nil
 		}
 		return errors.New("error")
-	}).After(func(ctx context.Context, err error) {
+	}).After(func(ctx context.Context, task *Task) {
 		afterCalls += 1
 	}).Retries(10)
 
