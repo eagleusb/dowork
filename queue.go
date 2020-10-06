@@ -131,11 +131,11 @@ func (q *Queue) Dispatch(ctx context.Context) bool {
 			}
 			timer := prometheus.NewTimer(
 				taskDurations.WithLabelValues(q.name))
-			n, _ := task.Attempt(ctx)
+			task.Attempt(ctx)
 			timer.ObserveDuration()
-			if !task.Done() && n.Before(next) {
-				next = n
-			}
+		}
+		if !task.Done() && task.NextAttempt().Before(next) {
+			next = task.NextAttempt()
 		}
 	}
 
