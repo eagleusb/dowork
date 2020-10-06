@@ -210,3 +210,17 @@ func (q *Queue) Shutdown() {
 	q.shutdown <- nil
 	q.wg.Wait()
 }
+
+// Shuts down any number of work queues in parallel and blocks until they're
+// all finished.
+func Join(queues ...*Queue) {
+	var wg sync.WaitGroup
+	wg.Add(len(queues))
+	for _, q := range queues {
+		go func() {
+			q.Shutdown()
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+}
