@@ -150,11 +150,12 @@ func (t *Task) After(fn func(ctx context.Context, task *Task)) *Task {
 }
 
 // Specifies an upper limit for the duration of each attempt.
-func (t *Task) Within(deadline time.Duration) {
+func (t *Task) Within(deadline time.Duration) *Task {
 	if t.immutable {
 		panic(errors.New("Attempted to configure immutable task"))
 	}
 	t.within = deadline
+	return t
 }
 
 // Returns the result of the task. The task must have been completed for this
