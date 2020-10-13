@@ -217,10 +217,10 @@ func Join(queues ...*Queue) {
 	var wg sync.WaitGroup
 	wg.Add(len(queues))
 	for _, q := range queues {
-		go func() {
+		go func(q *Queue) {
 			q.Shutdown()
 			wg.Done()
-		}()
+		}(q)
 	}
 	wg.Wait()
 }
