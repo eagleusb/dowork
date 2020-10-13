@@ -92,7 +92,11 @@ func (q *Queue) Enqueue(t *Task) error {
 	q.tasks = append(q.tasks, t)
 	q.mutex.Unlock()
 	if q.wake != nil {
-		q.wake <- nil
+		// Runs asyncronously to avoid deadlocking if a task submits another
+		// task
+		go func() {
+			q.wake <- nil
+		}()
 	}
 	return nil
 }
