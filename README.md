@@ -1,7 +1,7 @@
 # dowork [![godoc](https://godoc.org/git.sr.ht/~sircmpwn/dowork?status.svg)](https://godoc.org/git.sr.ht/~sircmpwn/dowork) [![builds.sr.ht status](https://builds.sr.ht/~sircmpwn/dowork.svg)](https://builds.sr.ht/~sircmpwn/dowork)
 
-dowork is a generic task queueing system for Go programs. It queues, executes,
-and reschedules tasks in Goroutine in-process.
+dowork is a general purpose task queueing system for Go programs. It queues,
+executes, and reschedules tasks in a Goroutine in-process.
 
 A global task queue is provided for simple use-cases. To use it:
 
