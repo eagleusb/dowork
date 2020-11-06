@@ -158,6 +158,15 @@ func (t *Task) Within(deadline time.Duration) *Task {
 	return t
 }
 
+// Specifies the earliest possible time of the first execution.
+func (t *Task) NotBefore(date time.Time) *Task {
+	if t.immutable {
+		panic(errors.New("Attempted to configure immutable task"))
+	}
+	t.nextAttempt = date
+	return t
+}
+
 // Returns the result of the task. The task must have been completed for this
 // to be valid.
 func (t *Task) Result() error {
