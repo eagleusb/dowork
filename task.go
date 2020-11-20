@@ -3,6 +3,8 @@ package work
 import (
 	"context"
 	"errors"
+	"fmt"
+	"log"
 	"math"
 	"time"
 )
@@ -91,7 +93,15 @@ func (t *Task) Attempt(ctx context.Context) (time.Time, error) {
 		defer cancel()
 	}
 
-	t.err = t.fn(ctx)
+	func() {
+		defer func() {
+			if err := recover(); err != nil {
+				t.err = fmt.Errorf("panic: %v", err)
+			}
+		}()
+		t.err = t.fn(ctx)
+	}()
+
 	if t.err == nil {
 		t.done = true
 		if t.after != nil {
@@ -106,6 +116,7 @@ func (t *Task) Attempt(ctx context.Context) (time.Time, error) {
 		next = t.maxTimeout
 	}
 	t.nextAttempt = Now().Add(next)
+	log.Printf("Attempt %d failed (%v), retrying in %s", t.err, next.String())
 	return t.nextAttempt, t.err
 }
 
