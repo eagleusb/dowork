@@ -116,7 +116,8 @@ func (t *Task) Attempt(ctx context.Context) (time.Time, error) {
 		next = t.maxTimeout
 	}
 	t.nextAttempt = Now().Add(next)
-	log.Printf("Attempt %d failed (%v), retrying in %s", t.err, next.String())
+	log.Printf("Attempt %d failed (%v), retrying in %s",
+		t.Attempts(), t.err, next.String())
 	return t.nextAttempt, t.err
 }
 
